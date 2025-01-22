@@ -1,4 +1,4 @@
-import 'package:aims/screens/loginscreen.dart';
+import 'package:aims/screens/authentication/loginscreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

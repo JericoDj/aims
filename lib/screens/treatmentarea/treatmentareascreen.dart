@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:aims/utils/colors.dart';
 
+import 'historychart.dart';
+
 class TreatmentAreaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -66,7 +68,7 @@ class TreatmentAreaScreen extends StatelessWidget {
             Center(
               child: GestureDetector(
                 onTap: () {
-                  Get.to(() => InventoryScreen());
+                  Get.to(() => HistoryChartScreen());
                   // Add functionality for Inventory
                 },
                 child: Column(
