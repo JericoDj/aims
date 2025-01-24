@@ -13,9 +13,14 @@ class TreatmentAreaScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 70,
-          automaticallyImplyLeading: false,
           backgroundColor: MyColors.red,
           centerTitle: true,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Get.back();
+            },
+          ),
           title: Text(
             "TREATMENT AREA",
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -30,69 +35,63 @@ class TreatmentAreaScreen extends StatelessWidget {
             Center(
               child: GestureDetector(
                 onTap: () {
-
                   Get.to(() => QRScannerScreen());
-                  // Add functionality for QR Scanner
                 },
                 child: Column(
                   children: [
                     Container(
-
-                      width: 180, // Button width
-                      height: 180, // Button height
+                      width: 150,
+                      height: 150,
                       decoration: BoxDecoration(
                         border: Border.all(color: MyColors.red, width: 3),
                         color: MyColors.orange,
-
                       ),
                       child: Center(
                         child: Icon(
                           Icons.qr_code_scanner,
                           color: Colors.white,
-                          size: 120, // Bigger icon for better visibility
+                          size: 100,
                         ),
                       ),
                     ),
                     SizedBox(height: 5),
                     Text(
                       "QR SCANNER",
-                      style: TextStyle(fontSize: 20, color: MyColors.red, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 16, color: MyColors.red, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
             ),
-            SizedBox(height: 30), // Space between buttons
+            SizedBox(height: 40), // Space between buttons
 
             // Inventory Container
             Center(
               child: GestureDetector(
                 onTap: () {
                   Get.to(() => HistoryChartScreen());
-                  // Add functionality for Inventory
                 },
                 child: Column(
                   children: [
                     Container(
-                      width: 180, // Button width
-                      height: 180, // Button height
+                      width: 150,
+                      height: 150,
                       decoration: BoxDecoration(
                         border: Border.all(color: MyColors.red, width: 3),
                         color: MyColors.orange,
-
                       ),
                       child: Center(
                         child: Icon(
-                          Icons.inventory,
+                          Icons.event_note,
                           color: Colors.white,
-                          size: 120, // Bigger icon for better visibility
+                          size: 100,
                         ),
                       ),
                     ),
                     SizedBox(height: 5),
                     Text(
                       "HISTORY CHART",
-                      style: TextStyle(fontSize: 20, color: MyColors.red, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 16, color: MyColors.red, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -100,22 +99,6 @@ class TreatmentAreaScreen extends StatelessWidget {
             ),
           ],
         ),
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Container(
-            height: 70,
-            width: 70,
-            child: FloatingActionButton(
-
-              onPressed: () {
-                Get.back();
-              },
-              backgroundColor: MyColors.red,
-              child: Icon(Icons.arrow_back, color: Colors.white,size: 30,),
-            ),
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }

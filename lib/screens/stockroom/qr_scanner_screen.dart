@@ -32,7 +32,7 @@ class QRScannerScreen extends StatelessWidget {
               backgroundColor: MyColors.red,
               padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
             ),
-            child: Text("Simulate Scan", style: TextStyle(color: Colors.white)),
+            child: Text("Simulate Scan", style: TextStyle(color: Colors.white,fontSize: 18)),
           ),
         ),
       ),
