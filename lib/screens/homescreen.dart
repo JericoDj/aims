@@ -31,14 +31,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
-                        SizedBox(height: 40),
+                        SizedBox(height: 20),
 
                         // Bigger Logo
                         Image.asset(
                           'assets/images/logo/logo.png',
-                          height: 250, // Increased size
+                          height: 200, // Increased size
                         ),
-                        SizedBox(height: 40),
+                        SizedBox(height: 36),
 
                         // Stock Room Button
                         buildButton("STOCK ROOM", MyColors.orange, MyColors.red, () {
@@ -120,12 +120,13 @@ class _HomeScreenState extends State<HomeScreen> {
           // **📛 App Title**
           Text(
             "AIMS",
-            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
           ),
 
           // **🔑 Logout Button**
           IconButton(
-            icon: Icon(Icons.logout, color: Colors.white),
+            style: ButtonStyle(iconSize: WidgetStatePropertyAll(28)),
+            icon: Icon(Icons.logout, color: Colors.white,),
             onPressed: _showLogoutDialog,
           ),
 
@@ -223,13 +224,13 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           elevation: 0,
-          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 20), // Increased padding
+          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 16), // Increased padding
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: borderColor, width: 2),
           ),
         ),
-        child: Text(text, style: TextStyle(fontSize: 22, color: textColor, fontWeight: FontWeight.bold)), // Increased text size
+        child: Text(text, style: TextStyle(fontSize: 18, color: textColor, fontWeight: FontWeight.bold)), // Increased text size
       ),
     );
   }
