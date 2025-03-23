@@ -1,4 +1,5 @@
 import 'package:aims/screens/authentication/loginscreen.dart';
+import 'package:aims/screens/server_connection_screen.dart';
 import 'package:aims/screens/stockroom/stockroom.dart';
 import 'package:aims/screens/treatmentarea/treatmentareascreen.dart';
 import 'package:flutter/material.dart';
@@ -55,6 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Generate QR Code Button
                         buildButton("GENERATE QR CODE", MyColors.orange, MyColors.red, () {
                           Get.to(() => GenerateQRCodeScreen());
+                        }),
+
+                        SizedBox(height: 20),
+
+                        // Generate QR Code Button
+                        buildButton("Connect to Offline", MyColors.orange, MyColors.red, () {
+                          Get.to(() => ConnectToOfflinePage());
                         }),
 
                         SizedBox(height: 50), // Extra space for scrolling

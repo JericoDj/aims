@@ -35,7 +35,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Logo
                   Image.asset('assets/images/logo/logo.png', height: 200),
                   const SizedBox(height: 20),
-                  Text("AIMS", style: GoogleFonts.roboto(color: MyColors.red, fontSize: 36, letterSpacing: 5)),
+                  Text("AIMS", style: GoogleFonts.roboto(
+                      fontWeight: FontWeight.bold, color: MyColors.red, fontSize: 36, letterSpacing: 5)),
                   const SizedBox(height: 20),
 
                   // Email Input
