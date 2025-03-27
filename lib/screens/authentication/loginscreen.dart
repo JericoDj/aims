@@ -12,6 +12,7 @@ import '../../utils/user_storage.dart';
 
 import '../authentication_repository.dart';
 import '../homescreen.dart';
+import 'forgotpasswordscreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -184,8 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             foregroundColor: MaterialStateProperty.all(MyColors.white),
                           ),
                           onPressed: () {
-                            Get.snackbar('Forgot Password', 'Forgot Password button pressed',
-                                snackPosition: SnackPosition.BOTTOM);
+
+                            // Navigate to the Forgot Password screen
+                            Get.to(ForgotPasswordScreen());
                           },
                           child: const Text('Forgot Password?'),
                         ),

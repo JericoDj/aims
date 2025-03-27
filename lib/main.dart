@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'controller/notification_controller.dart';
 import 'firebase_options.dart';
 
 
@@ -114,6 +115,9 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   ).then((FirebaseApp value) => Get.put(AuthenticationRepository()));
+
+
+  Get.put(NotificationController());
 
   // ✅ Initialize notifications
   await _initializeNotifications();

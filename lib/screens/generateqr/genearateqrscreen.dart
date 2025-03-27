@@ -115,14 +115,7 @@ class _GenerateQRCodeScreenState extends State<GenerateQRCodeScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Get.back();
-        },
-        backgroundColor: MyColors.red,
-        child: Icon(Icons.arrow_back, color: Colors.white, size: 30),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
     );
   }
 
