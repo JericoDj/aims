@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
+import '../utils/user_storage.dart';
+
 class ConnectToOfflineController extends GetxController {
   var serverData = <Map<String, dynamic>>[].obs; // Observable list of server data
   var isLoading = false.obs;
@@ -40,6 +42,62 @@ class ConnectToOfflineController extends GetxController {
 
 
 
+
+  // function in aims update but upon entering we need to save it to local storage the ip.. okay?
+  Future<bool> updateItemQuantity(int id, int newQuantity) async {
+    print("🚀 Starting updateItemQuantity()");
+
+    // ✅ Get the saved IP from local storage
+    final serverIp = LocalStorage.getServerIp(); // Already includes :8080
+    print('🌐 Retrieved Server IP: ${serverIp ?? "null"}');
+
+    if (serverIp == null || serverIp.trim().isEmpty) {
+      serverStatus.value = "❌ Server IP not found in local storage";
+      print("❌ No server IP saved.");
+      return false;
+    }
+
+    try {
+      final url = 'http://$serverIp/items/$id';
+      final body = jsonEncode({'quantity': newQuantity});
+
+      print('🔄 Attempting quantity update...');
+      print('📤 URL: $url');
+      print('📦 Request Body: $body');
+
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      ).timeout(const Duration(seconds: 5));
+
+      print('📥 Received response:');
+      print('🎚️ Status Code: ${response.statusCode}');
+      print('📭 Response Body: ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        serverStatus.value = "✅ Quantity updated successfully";
+        await fetchData();
+        return true;
+      }
+
+      final errorMessage = switch (response.statusCode) {
+        400 => 'Invalid request format',
+        404 => 'Item not found',
+        500 => 'Server internal error',
+        _ => 'Unknown error',
+      };
+
+      serverStatus.value = "❌ Update failed: $errorMessage (${response.statusCode})";
+      return false;
+
+    } catch (e, stackTrace) {
+      print('💥 Unexpected error: $e');
+      print('🔍 Stack trace: $stackTrace');
+      serverStatus.value = "❌ Unexpected error: ${e.toString()}";
+      return false;
+    }
+  }
 
   // Update data method
   Future<void> updateData(Map<String, dynamic> updatedData) async {
@@ -88,6 +146,11 @@ class ConnectToOfflineController extends GetxController {
       ).timeout(Duration(seconds: 5));
 
       if (response.statusCode == 200) {
+
+
+        // Save IP locally
+        await LocalStorage.saveServerIp(serverIp);
+
         serverData.value = List<Map<String, dynamic>>.from(jsonDecode(response.body));
         serverStatus.value = "✅ Connected to Server";
         isConnected.value = true;

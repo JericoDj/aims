@@ -1,27 +1,45 @@
-import 'package:aims/screens/stockroom/inventory_screen.dart';
+
+
 import 'package:aims/screens/stockroom/qr_scanner_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:aims/utils/colors.dart';
+
+
+import '../../utils/colors.dart';
+import 'inventory_screen.dart';
 
 class StockRoomScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
           toolbarHeight: 70,
-          backgroundColor: MyColors.red,
+          backgroundColor: MyColors.white,
           centerTitle: true,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {
-              Get.back();
-            },
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              height: 40, // Adjusted container size (small but fits icon)
+              width: 40,  // Ensure it's a perfect square
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: MyColors.darkRed,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.arrow_back, color: MyColors.white, size: 28), // Increased icon size
+                padding: EdgeInsets.zero, // Removes extra padding inside the button
+                constraints: BoxConstraints(), // Prevents extra spacing issues
+                onPressed: () {
+                  Get.back();
+                },
+              ),
+            ),
           ),
           title: Text(
             "STOCK ROOM",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: MyColors.red, fontWeight: FontWeight.bold, fontSize: 28),
           ),
         ),
         body: Column(
@@ -41,8 +59,8 @@ class StockRoomScreen extends StatelessWidget {
                       width: 150,
                       height: 150,
                       decoration: BoxDecoration(
-                        border: Border.all(color: MyColors.red, width: 3),
-                        color: MyColors.orange,
+                        border: Border.all(color: MyColors.darkRed, width: 3),
+                        color: MyColors.darkRed,
                       ),
                       child: Center(
                         child: Icon(
@@ -52,10 +70,10 @@ class StockRoomScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    SizedBox(height: 5),
+                    SizedBox(height: 3),
                     Text(
                       "QR SCANNER",
-                      style: TextStyle(fontSize: 16, color: MyColors.red, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 20, color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -75,21 +93,22 @@ class StockRoomScreen extends StatelessWidget {
                       width: 150,
                       height: 150,
                       decoration: BoxDecoration(
-                        border: Border.all(color: MyColors.red, width: 3),
+                        border: Border.all(color: MyColors.orange, width: 3),
                         color: MyColors.orange,
                       ),
                       child: Center(
                         child: Icon(
-                          Icons.inventory,
+                          Icons.library_books_sharp,
                           color: Colors.white,
                           size: 100,
                         ),
+
                       ),
                     ),
-                    SizedBox(height: 5),
+                    SizedBox(height: 3),
                     Text(
                       "INVENTORY",
-                      style: TextStyle(fontSize: 16, color: MyColors.red, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 20, color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),

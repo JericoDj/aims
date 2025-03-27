@@ -2,11 +2,14 @@ import 'package:aims/screens/authentication/loginscreen.dart';
 import 'package:aims/screens/server_connection_screen.dart';
 import 'package:aims/screens/stockroom/stockroom.dart';
 import 'package:aims/screens/treatmentarea/treatmentareascreen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:aims/utils/colors.dart';
+import '../utils/user_storage.dart';
 import '../utils/version.dart';
 import 'generateqr/genearateqrscreen.dart';
+import 'oflline/offlineDataScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -14,6 +17,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
+
+  List<DocumentSnapshot> notificationDocs = [];
+
+  bool hasMoreNotifications = true;
+
+  bool isLoading = false;
+  DocumentSnapshot? lastNotification;
+  int notificationLimit = 5;
+
   bool hasNotification = true;
   bool isNotificationDrawerOpen = false;
 
@@ -24,6 +37,40 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: MyColors.white,
         body: Stack(
           children: [
+
+
+
+
+
+
+
+
+
+
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Image.asset(
+                'assets/images/login_background/homepage_background.png',
+                fit: BoxFit.fitWidth,
+              ),
+            ),
+
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: Text(
+                textAlign: TextAlign.center,
+                "Version: ${AppVersion.version} (Build: ${AppVersion
+                    .build})",
+                style: TextStyle(color: Colors.black, fontSize: 16, ),
+              ),
+            ),
+
+
+
             Column(
               children: [
                 _buildAppBar(),
@@ -39,37 +86,51 @@ class _HomeScreenState extends State<HomeScreen> {
                           'assets/images/logo/logo.png',
                           height: 200, // Increased size
                         ),
-                        SizedBox(height: 36),
+                        SizedBox(height: 10),
+
+                        // **📛 App Title**
+                        Text(
+                          "AIMS",
+                          style: TextStyle(color: Colors.black,
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold),
+                        ),
+
+                        Text(
+                          "NURSE APP",
+
+                          style: TextStyle(color: MyColors.red,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2),
+                        ),
+
+
+                        SizedBox(height: 20),
 
                         // Stock Room Button
-                        buildButton("STOCK ROOM", MyColors.orange, MyColors.red, () {
+                        buildButton(
+                            "STOCK ROOM", MyColors.white, MyColors.red, () {
                           Get.to(() => StockRoomScreen());
                         }),
                         SizedBox(height: 20),
 
                         // Treatment Area Button
-                        buildButton("TREATMENT AREA", MyColors.orange, MyColors.red, () {
-                          Get.to(() => TreatmentAreaScreen());
-                        }),
+                        buildButton("TREATMENT AREA", MyColors.white,
+                            MyColors.red, () {
+                              Get.to(() => TreatmentAreaScreen());
+                            }),
                         SizedBox(height: 20),
 
                         // Generate QR Code Button
-                        buildButton("GENERATE QR CODE", MyColors.orange, MyColors.red, () {
-                          Get.to(() => GenerateQRCodeScreen());
-                        }),
+                        buildButton("GENERATE QR CODE", MyColors.white,
+                            MyColors.red, () {
+                              Get.to(() => GenerateQRCodeScreen());
+                            }),
 
                         SizedBox(height: 20),
 
-                        // Generate QR Code Button
-                        buildButton("Connect to Offline", MyColors.orange, MyColors.red, () {
-                          Get.to(() => ConnectToOfflinePage());
-                        }),
 
-                        SizedBox(height: 50), // Extra space for scrolling
-
-                        Text("Version: ${AppVersion.version} (Build: ${AppVersion.build})",
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
-                        ),
 
                       ],
                     ),
@@ -88,10 +149,160 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+  Widget _buildNotificationDrawer() {
+    return Positioned(
+      top: 60,
+      left: 0,
+      right: 0,
+      child: Material(
+        elevation: 5,
+        child: Container(
+          height: 350,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: MyColors.white,
+            border: Border.all(color: MyColors.red),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                "🔔 Notifications",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: MyColors.red,
+                ),
+              ),
+              Divider(color: MyColors.red),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: notificationDocs.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == notificationDocs.length) {
+                      return _buildLoadMoreButton();
+                    }
+                    final data = notificationDocs[index];
+                    return ListTile(
+                      leading: Icon(Icons.history, color: MyColors.orange),
+                      title: Text(
+                        data["Item Name"],
+                        style: TextStyle(
+                            color: MyColors.red, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        "${data["Action"]}: ${data["Quantity"]} (${data["Category"]})",
+                      ),
+                      trailing: Text(
+                        _formatTimestamp(data["Date Updated"]),
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+  Widget _buildLoadMoreButton() {
+    if (!hasMoreNotifications) {
+      return Center(child: Text("No more notifications."));
+    }
+    return TextButton(
+      onPressed: _fetchNotifications,
+      child: isLoading
+          ? CircularProgressIndicator()
+          : Text("Load More", style: TextStyle(color: MyColors.red)),
+    );
+  }
+
+
+  String _formatTimestamp(String timestamp) {
+    try {
+      final dt = DateTime.parse(timestamp);
+      return "${dt.year}-${dt.month}-${dt.day} ${dt.hour}:${dt.minute}";
+    } catch (e) {
+      return "Invalid date";
+    }
+  }
+
+
+  /// 🚀 Fetch initial notifications from Firestore
+  Future<void> _fetchNotifications() async {
+    if (isLoading || !hasMoreNotifications) return;
+
+    setState(() => isLoading = true);
+
+    Query query = FirebaseFirestore.instance
+        .collection('history')
+        .orderBy('Date Updated', descending: true)
+        .limit(notificationLimit);
+
+    if (lastNotification != null) {
+      query = query.startAfterDocument(lastNotification!);
+    }
+
+    QuerySnapshot snapshot = await query.get();
+
+    if (snapshot.docs.isNotEmpty) {
+      setState(() {
+        notificationDocs.addAll(snapshot.docs);
+        lastNotification = snapshot.docs.last;
+        if (snapshot.docs.length < notificationLimit) {
+          hasMoreNotifications = false;
+        }
+      });
+    } else {
+      setState(() => hasMoreNotifications = false);
+    }
+
+    setState(() => isLoading = false);
+  }
+
+
+  Widget buildButton(String text, Color textColor, Color borderColor,
+      VoidCallback onPressed) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: MyColors.red,
+          padding: EdgeInsets.symmetric(vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(5),
+            side: BorderSide(color: borderColor, width: 2),
+          ),
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 20,
+                color: textColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
   /// **🔹 Custom AppBar**
   Widget _buildAppBar() {
     return Container(
-      color: MyColors.red,
+      color: MyColors.white,
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -100,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Stack(
             children: [
               IconButton(
-                icon: Icon(Icons.notifications, color: Colors.white, size: 28),
+                icon: Icon(Icons.notifications, color: Colors.black, size: 28),
                 onPressed: () {
                   setState(() {
                     isNotificationDrawerOpen = !isNotificationDrawerOpen;
@@ -117,7 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 10,
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.white),
-                      color: MyColors.orange,
+                      color: MyColors.red,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -125,17 +336,23 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          // **📛 App Title**
-          Text(
-            "AIMS",
-            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-          ),
 
-          // **🔑 Logout Button**
-          IconButton(
-            style: ButtonStyle(iconSize: WidgetStatePropertyAll(28)),
-            icon: Icon(Icons.logout, color: Colors.white,),
-            onPressed: _showLogoutDialog,
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.cloud_done,
+                  color: MyColors.orange,
+                  size: 28,
+                ),
+                onPressed: _showDatabaseSwitchDialog, // Open switch dialog
+              ),
+
+              IconButton(
+                icon: Icon(Icons.logout, size: 28),
+                onPressed: _showLogoutDialog,
+              ),
+            ],
           ),
 
 
@@ -144,102 +361,191 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// **🔹 Notification Drawer**
-  Widget _buildNotificationDrawer() {
-    return Positioned(
-      top: 60,
-      left: 0,
-      right: 0,
-      child: Material(
-        elevation: 5,
-        color: MyColors.white,
-        child: Container(
-          padding: EdgeInsets.all(16),
-          height: 250, // Increased height
-          decoration: BoxDecoration(
-            border: Border.all(color: MyColors.red),
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
-          ),
-          child: Column(
-            children: [
-              Text(
-                "🔔 Notifications",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: MyColors.red),
-              ),
-              SizedBox(height: 10),
-              Divider(color: MyColors.red),
 
-              // **📩 Sample Notifications**
-              ListTile(
-                leading: Icon(Icons.info, color: MyColors.orange),
-                title: Text("New update available!", style: TextStyle(color: MyColors.red)),
-                subtitle: Text("Tap to update"),
-                onTap: () {},
-              ),
-              ListTile(
-                leading: Icon(Icons.check_circle, color: MyColors.orange),
-                title: Text("Backup Completed", style: TextStyle(color: MyColors.red)),
-                subtitle: Text("Your inventory is safe"),
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// **🔹 Logout Confirmation Dialog**
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Logout", style: TextStyle(color: MyColors.red, fontWeight: FontWeight.bold)),
-          content: Text("Are you sure you want to log out?"),
-          actions: [
-            // ❌ FIXED: "Cancel" should only close the dialog, not log out
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Closes the dialog
-              },
-              child: Text("Cancel", style: TextStyle(color: MyColors.red)),
-            ),
-
-            // ✅ "Logout" should clear navigation and go to LoginScreen
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close the dialog first
-                Get.offAll(() => LoginScreen()); // ✅ Now properly navigates to LoginScreen
-              },
-              child: Text("Logout", style: TextStyle(color: MyColors.orange, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
+      builder: (context) =>
+          AlertDialog(
+            title: Text("Logout",
+                style: TextStyle(color: MyColors.red, fontWeight: FontWeight
+                    .bold)),
+            content: Text("Are you sure you want to log out?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text("Cancel", style: TextStyle(color: MyColors.red)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // await LocalStorage.deleteFCMToken();
+                  await LocalStorage.deleteUserId();
+                  Navigator.pop(context);
+                  Get.offAll(() => LoginScreen());
+                },
+                child: Text("Logout",
+                    style: TextStyle(color: MyColors.orange)),
+              ),
+            ],
+          ),
     );
   }
 
+  // ✅ Switchable Database Mode Dialog
+  void _showDatabaseSwitchDialog() {
+    showDialog(
+      context: this.context,
+      builder: (context) =>
+          AlertDialog(
+            title: Text("Database Settings", textAlign: TextAlign.center,),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Use Offline Database."),
+                SizedBox(height: 10),
 
-  /// **🔹 Custom Button Builder**
-  Widget buildButton(String text, Color textColor, Color borderColor, VoidCallback onPressed) {
-    return Container(
-      width: double.infinity, // Make buttons full-width
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          elevation: 0,
-          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 16), // Increased padding
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: borderColor, width: 2),
+                // ✅ New Button: View Offline Data
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context); // Close the dialog
+                    Get.to(() => ConnectToOfflinePage());
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: MyColors.orange,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.storage, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text(
+                          "View Offline Data",
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+
+              ],
+            ),
+
+
+          ),
+    );
+
+    /// **🔹 Notification Drawer**
+    Widget _buildNotificationDrawer() {
+      return Positioned(
+        top: 60,
+        left: 0,
+        right: 0,
+        child: Material(
+          elevation: 5,
+          color: MyColors.white,
+          child: Container(
+            padding: EdgeInsets.all(16),
+            height: 250, // Increased height
+            decoration: BoxDecoration(
+              border: Border.all(color: MyColors.red),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  "🔔 Notifications",
+                  style: TextStyle(fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: MyColors.red),
+                ),
+                SizedBox(height: 10),
+                Divider(color: MyColors.red),
+
+                // **📩 Sample Notifications**
+                ListTile(
+                  leading: Icon(Icons.info, color: MyColors.orange),
+                  title: Text("New update available!",
+                      style: TextStyle(color: MyColors.red)),
+                  subtitle: Text("Tap to update"),
+                  onTap: () {},
+                ),
+                ListTile(
+                  leading: Icon(Icons.check_circle, color: MyColors.orange),
+                  title: Text("Backup Completed",
+                      style: TextStyle(color: MyColors.red)),
+                  subtitle: Text("Your inventory is safe"),
+                  onTap: () {},
+                ),
+              ],
+            ),
           ),
         ),
-        child: Text(text, style: TextStyle(fontSize: 18, color: textColor, fontWeight: FontWeight.bold)), // Increased text size
-      ),
-    );
+      );
+    }
+
+    /// **🔹 Logout Confirmation Dialog**
+    void _showLogoutDialog() {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Logout", style: TextStyle(
+                color: MyColors.red, fontWeight: FontWeight.bold)),
+            content: Text("Are you sure you want to log out?"),
+            actions: [
+              // ❌ FIXED: "Cancel" should only close the dialog, not log out
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Closes the dialog
+                },
+                child: Text("Cancel", style: TextStyle(color: MyColors.red)),
+              ),
+
+              // ✅ "Logout" should clear navigation and go to LoginScreen
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close the dialog first
+                  Get.offAll(() =>
+                      LoginScreen()); // ✅ Now properly navigates to LoginScreen
+                },
+                child: Text("Logout", style: TextStyle(
+                    color: MyColors.orange, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+
+    /// **🔹 Custom Button Builder**
+    Widget buildButton(String text, Color textColor, Color borderColor,
+        VoidCallback onPressed) {
+      return Container(
+        width: double.infinity, // Make buttons full-width
+        padding: EdgeInsets.symmetric(horizontal: 20),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            elevation: 0,
+            padding: EdgeInsets.symmetric(horizontal: 50, vertical: 16),
+            // Increased padding
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: borderColor, width: 2),
+            ),
+          ),
+          child: Text(text, style: TextStyle(fontSize: 18,
+              color: textColor,
+              fontWeight: FontWeight.bold)), // Increased text size
+        ),
+      );
+    }
   }
 }

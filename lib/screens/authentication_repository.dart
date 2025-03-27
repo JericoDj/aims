@@ -1,0 +1,144 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import 'package:get_storage/get_storage.dart';
+
+import '../screens/authentication/loginscreen.dart';
+
+import 'homescreen.dart'; // Rename Dio's Response class
+
+class AuthenticationRepository extends GetxController {
+  static AuthenticationRepository get instance => Get.find();
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GetStorage _storage = GetStorage(); // Use GetStorage
+
+  @override
+  void onReady() async {
+    super.onReady();
+    await _checkUserStatus(); // Automatically check for saved user data on startup
+  }
+
+  /// **Check if user is saved in GetStorage**
+  Future<void> _checkUserStatus() async {
+    String? savedUserId = _storage.read<String>('userId');
+
+    if (savedUserId != null && savedUserId.isNotEmpty) {
+      Get.offAll(() =>
+          HomeScreen()); // Navigate to HomeScreen if user ID exists
+    } else {
+      Get.offAll(() => LoginScreen()); // Navigate to LoginScreen otherwise
+    }
+  }
+
+  /// **Check if email already exists**
+  Future<bool> checkEmailExists(String email) async {
+    try {
+      List<String> signInMethods = await _auth.fetchSignInMethodsForEmail(
+          email);
+      return signInMethods.isNotEmpty;
+    } catch (e) {
+      debugPrint("Error checking email existence: $e");
+      // Return false to allow the signup process to continue if an error occurs.
+      return false;
+    }
+  }
+
+  /// **Create a new account with Firebase Authentication**
+  /// **Create a new account with Firebase Authentication**
+  Future<void> createAccount({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    required String role,
+  }) async {
+    try {
+      // **Step 1: Check if email already exists**
+      bool emailExists = await checkEmailExists(email);
+      if (emailExists) {
+        Get.snackbar(
+          "Error",
+          "Email is already in use. Please use a different email.",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+          duration: Duration(seconds: 3), // ✅ Keep Snackbar visible
+        );
+        return;
+      }
+
+      // **Step 2: Create user in Firebase Authentication**
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // **Step 3: Save user details in Firestore**
+      await _firestore.collection("users").doc(userCredential.user!.uid).set({
+        "uid": userCredential.user!.uid,
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "role": role,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      // **Step 4: Show success Snackbar**
+      Get.snackbar(
+        "Success",
+        "Account created successfully!",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: Duration(seconds: 3), // ✅ Snackbar remains visible
+      );
+
+      // **Step 5: Close the dialog after Snackbar disappears**
+      Future.delayed(Duration(seconds: 3), () {
+        if (Get.isDialogOpen!) {
+          Get.back(); // ✅ Close dialog only after 3 seconds
+        }
+      });
+    } catch (e) {
+      debugPrint("Error creating account: $e");
+      Get.snackbar(
+        "Error",
+        "Failed to create account: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: Duration(seconds: 3), // ✅ Ensure visibility
+      );
+    }
+  }
+
+
+  /// **Log in with email and password**
+  Future<UserCredential?> loginWithEmailAndPassword(String email,
+      String password) async {
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      debugPrint("Login failed: $e");
+      Get.snackbar(
+        "Login Failed",
+        e.message ?? "An error occurred",
+        backgroundColor: const Color(0xFFE57373),
+        colorText: Colors.white,
+      );
+      return null;
+    }
+  }
+}
