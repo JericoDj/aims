@@ -1,35 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:aims/utils/colors.dart';
+import '../../controller/Qr_Code_Controller.dart';
+import '../../utils/colors.dart';
 
-import 'generated_qr_code_screen.dart';
 
-class GenerateQRCodeScreen extends StatefulWidget {
-  @override
-  _GenerateQRCodeScreenState createState() => _GenerateQRCodeScreenState();
-}
-
-class _GenerateQRCodeScreenState extends State<GenerateQRCodeScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  // Controllers for input fields
-  TextEditingController storageCodeController = TextEditingController();
-  TextEditingController serialNoController = TextEditingController();
-  TextEditingController itemNameController = TextEditingController();
-  TextEditingController brandController = TextEditingController();
-  TextEditingController expirationDateController = TextEditingController();
-  TextEditingController unitMeasurementController = TextEditingController();
-  TextEditingController specificationController = TextEditingController();
-
-  // Category Dropdown List
-  String selectedCategory = "Medical Supplies"; // Default selection
-  List<String> categories = [
-    "Medical Supplies",
-    "Safety Equipment",
-    "First Aid",
-    "Sanitation",
-    "Pharmaceuticals"
-  ];
+class GenerateQRCodeScreen extends StatelessWidget {
+  final QRCodeController controller = Get.put(QRCodeController());
 
   @override
   Widget build(BuildContext context) {
@@ -42,56 +18,42 @@ class _GenerateQRCodeScreenState extends State<GenerateQRCodeScreen> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: Colors.white, // 🔥 Dynamically changes
-          ),
-          onPressed: () {
-            Get.back(); // Navigate back
-          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Get.back(),
         ),
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Form(
-            key: _formKey,
+            key: controller.formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "New Item",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: MyColors.red),
-                ),
+                Text("New Item", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: MyColors.red)),
                 SizedBox(height: 10),
 
                 // Category Dropdown
                 Text("Category", style: TextStyle(fontWeight: FontWeight.bold)),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                Obx(() => DropdownButtonFormField<String>(
+                  value: controller.selectedCategory.value,
                   decoration: _inputDecoration(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      selectedCategory = newValue!;
-                    });
-                  },
-                  items: categories.map((String category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    );
+                  onChanged: (newValue) => controller.selectedCategory.value = newValue!,
+                  items: controller.categories.map((category) {
+                    return DropdownMenuItem(value: category, child: Text(category));
                   }).toList(),
-                ),
+                )),
                 SizedBox(height: 10),
 
                 // Input Fields
-                _buildTextField("Storage Code", storageCodeController),
-                _buildTextField("Serial No.", serialNoController),
-                _buildTextField("Item Name", itemNameController),
-                _buildTextField("Brand", brandController),
-                _buildTextField("Expiration Date (YYYY-MM-DD)", expirationDateController),
-                _buildTextField("Unit of Measurement", unitMeasurementController),
-                _buildTextField("Specifications", specificationController),
+                _buildTextField("Storage Code", controller.storageCodeController),
+                _buildTextField("Serial No.", controller.serialNoController),
+                _buildTextField("Item Name", controller.itemNameController),
+                _buildTextField("Brand", controller.brandController),
+                _buildTextField("Expiration Date (YYYY-MM-DD)", controller.expirationDateController),
+                _buildTextField("Unit of Measurement", controller.unitMeasurementController),
+                _buildTextField("Specifications", controller.specificationController),
+                _buildTextField("Quantity", controller.quantityController, isNumeric: true), // ✅ Added Quantity Field
 
                 SizedBox(height: 20),
 
@@ -99,7 +61,7 @@ class _GenerateQRCodeScreenState extends State<GenerateQRCodeScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _generateQRCode,
+                    onPressed: controller.generateQRCode,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: MyColors.orange,
                       padding: EdgeInsets.symmetric(vertical: 15),
@@ -115,49 +77,21 @@ class _GenerateQRCodeScreenState extends State<GenerateQRCodeScreen> {
           ),
         ),
       ),
-
     );
   }
 
-  // Function to Generate QR Code (Placeholder for Now)
-  void _generateQRCode() {
-    if (_formKey.currentState!.validate()) {
-      // Collect item details
-      Map<String, String> itemDetails = {
-        "Storage Code": storageCodeController.text,
-        "Serial No": serialNoController.text,
-        "Item Name": itemNameController.text,
-        "Brand": brandController.text,
-        "Expiration Date": expirationDateController.text,
-        "Unit of Measurement": unitMeasurementController.text,
-        "Specifications": specificationController.text,
-        "Category": selectedCategory
-      };
-
-      // Navigate to Generated QR Screen
-      Get.to(() => GeneratedQRCodeScreen(itemDetails: itemDetails));
-    }
-  }
-
-
-  // Function to Build Text Fields
-  Widget _buildTextField(String label, TextEditingController controller) {
+  Widget _buildTextField(String label, TextEditingController controller, {bool isNumeric = false}) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 5),
       child: TextFormField(
         controller: controller,
+        keyboardType: isNumeric ? TextInputType.number : TextInputType.text, // ✅ Numeric input for Quantity
         decoration: _inputDecoration(label),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return "This field is required";
-          }
-          return null;
-        },
+        validator: (value) => value == null || value.isEmpty ? "This field is required" : null,
       ),
     );
   }
 
-  // Input Field Styling
   InputDecoration _inputDecoration([String hintText = ""]) {
     return InputDecoration(
       hintText: hintText,
