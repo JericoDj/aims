@@ -1,7 +1,6 @@
-
-import 'package:aims/screens/server_connection_screen.dart';
 import 'package:aims/screens/stockroom/stockroom.dart';
 import 'package:aims/screens/treatmentarea/treatmentareascreen.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -16,6 +15,7 @@ import '../../utils/version.dart';
 import '../utils/user_storage.dart';
 import 'authentication/loginscreen.dart';
 import 'generateqr/genearateqrscreen.dart';
+
 import 'oflline/offlineDataScreen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isOnline = true; // 🔄 Switchable online/offline mode
   Database? localDatabase; // ✅ Local database instance
 
-  bool hasNotification = true;
+  final hasNotification = false.obs; // Using RxBool from GetX
   bool isNotificationDrawerOpen = false;
 
   // 🔥 Pagination variables for Firestore
@@ -56,7 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initFirebaseNotifications();
-    _fetchNotifications();
+    _initializeNotificationCheck();
+
   }
 
 
@@ -83,6 +84,69 @@ class _HomeScreenState extends State<HomeScreen> {
       Get.to(() => HomeScreen());
     }
   }
+
+
+
+  void _initializeNotificationCheck() async {
+    try {
+      final lastSeen = LocalStorage.getLastSeenNotification();
+      print("ℹ️ Local Last Seen: ${lastSeen?.toIso8601String() ?? 'Never'}");
+
+      // 🔍 Fetch a limited number of recent history documents
+      final allNotifications = await FirebaseFirestore.instance
+          .collection('history')
+          .orderBy('Date Updated', descending: true)
+          .limit(10)
+          .get();
+
+      bool hasNew = false;
+
+      print("📋 All 'Date Updated' values from Firestore:");
+      for (final doc in allNotifications.docs) {
+        final dateData = doc['Date Updated'];
+        DateTime? docDate = dateData is String ? DateTime.tryParse(dateData) : null;
+
+        final isNew = lastSeen == null || (docDate != null && docDate.isAfter(lastSeen));
+        print("• ${docDate?.toIso8601String() ?? 'Invalid'} ${isNew ? '[NEW]' : '[OLD]'}");
+
+        if (isNew) hasNew = true;
+      }
+
+      // ✅ Final result
+      print("⚖️ Initial Check Result: ${hasNew ? 'NEW' : 'NO NEW'} notifications");
+      hasNotification(hasNew);
+
+      // 🔁 Realtime listener
+      FirebaseFirestore.instance
+          .collection('history')
+          .orderBy('Date Updated', descending: true)
+          .snapshots()
+          .listen((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          final latest = snapshot.docs.first;
+          final dateData = latest['Date Updated'];
+          DateTime? newDate = dateData is String ? DateTime.tryParse(dateData) : null;
+
+          if (newDate != null) {
+            final currentLastSeen = LocalStorage.getLastSeenNotification();
+            final isNewRealtime = currentLastSeen == null || newDate.isAfter(currentLastSeen);
+
+            print("🔥 Realtime Update: Latest Firestore Date: ${newDate.toIso8601String()}");
+            print("🆚 Local Last Seen: ${currentLastSeen?.toIso8601String() ?? 'Never'}");
+            print("➡️ ${isNewRealtime ? 'NEW NOTIFICATION' : 'NO NEW NOTIFICATION'}");
+
+            hasNotification(isNewRealtime);
+          }
+        }
+      });
+    } catch (e) {
+      print("❌ Error in notification check: $e");
+      hasNotification(false);
+    }
+  }
+
+
+
 
 
   /// 🚀 Fetch initial notifications from Firestore
@@ -157,9 +221,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
 
-
                         Text(
-                          "NURSE APP",
+                          "ADMIN APP",
 
                           style: TextStyle(color: MyColors.red, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
                         ),
@@ -219,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   Widget _buildAppBar() {
-    return Container(
+    return Obx(() => Container(
       color: MyColors.white,
       padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       child: Row(
@@ -228,13 +291,27 @@ class _HomeScreenState extends State<HomeScreen> {
           Stack(
             children: [
               IconButton(
-                icon: Icon(Icons.notifications, size: 36),
-                onPressed: () => setState(() {
-                  isNotificationDrawerOpen = !isNotificationDrawerOpen;
-                  hasNotification = false;
-                }),
+                icon: Icon(Icons.notifications,
+                  size: 36,
+                ),
+                onPressed: () async {
+                  LocalStorage.saveLastSeenNotification(DateTime.now());
+                  hasNotification(false);
+
+                  setState(() {
+                    isNotificationDrawerOpen = !isNotificationDrawerOpen;
+                  });
+
+                  if (isNotificationDrawerOpen) {
+                    // 🔄 Always refresh notifications on open
+                    notificationDocs.clear();
+                    lastNotification = null;
+                    hasMoreNotifications = true;
+                    await _fetchNotifications();
+                  }
+                },
               ),
-              if (hasNotification)
+              if (hasNotification.value)
                 Positioned(
                   right: 11,
                   top: 12,
@@ -258,9 +335,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: isOnline ? MyColors.orange : Colors.red,
                   size: 28,
                 ),
-                onPressed: _showDatabaseSwitchDialog, // Open switch dialog
+                onPressed: _showDatabaseSwitchDialog,
               ),
-
               IconButton(
                 icon: Icon(Icons.logout, size: 28),
                 onPressed: _showLogoutDialog,
@@ -269,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
 
@@ -289,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
             GestureDetector(
               onTap: () {
                 Navigator.pop(context); // Close the dialog
-                Get.to(() => ConnectToOfflinePage());
+                Get.to(() => OfflineDataScreen());
               },
               child: Container(
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
