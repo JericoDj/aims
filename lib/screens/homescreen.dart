@@ -11,7 +11,6 @@ import 'package:sqflite/sqflite.dart';
 import '../../api/firebase_api.dart';
 import '../../utils/colors.dart';
 
-import '../../utils/version.dart';
 import '../utils/user_storage.dart';
 import 'authentication/loginscreen.dart';
 import 'generateqr/genearateqrscreen.dart';
@@ -203,74 +202,54 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildAppBar(),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        Image.asset(
-                          'assets/images/logo/logo.png',
-                          height: 165,
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          "AIMS",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            children: [
+                              Image.asset('assets/images/logo/logo.png', height: 165),
+                              SizedBox(height: 10),
+                              Text("AIMS", style: TextStyle(color: Colors.black, fontSize: 48, fontWeight: FontWeight.bold)),
+                              Text("ADMIN APP", style: TextStyle(color: MyColors.red, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                              SizedBox(height: 20),
+                              buildButton("STOCK ROOM", MyColors.white, MyColors.red, () => Get.to(() => StockRoomScreen())),
+                              SizedBox(height: 20),
+                              buildButton("TREATMENT AREA", MyColors.white, MyColors.red, () => Get.to(() => TreatmentAreaScreen())),
+                              SizedBox(height: 20),
+                              buildButton("GENERATE QR CODE", MyColors.white, MyColors.red, () => Get.to(() => GenerateQRCodeScreen())),
+                            ],
                           ),
                         ),
-
-                        Text(
-                          "ADMIN APP",
-
-                          style: TextStyle(color: MyColors.red, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
-                        ),
-                        SizedBox(height: 20),
-
-
-                        buildButton("STOCK ROOM", MyColors.white, MyColors.red,
-                                () => Get.to(() => StockRoomScreen())),
-                        SizedBox(height: 20),
-                        buildButton("TREATMENT AREA", MyColors.white,
-                            MyColors.red, () => Get.to(() => TreatmentAreaScreen())),
-                        SizedBox(height: 20),
-                        buildButton("GENERATE QR CODE", MyColors.white,
-                            MyColors.red, () => Get.to(() => GenerateQRCodeScreen())),
-                        SizedBox(height: 80),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Positioned(
-              bottom: 20,
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-
-
-
-                  SizedBox(height: 30),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Version: 2.0.0 (Build: 1.0.0)",
-                        style: TextStyle(color: Colors.black, fontSize: 16),
                       ),
-                      // Info icon next to version text
-                      IconButton(
-                        icon: Icon(Icons.info_outline),
-                        onPressed: () => _showTutorialDialog(context),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 30),
+                        child: Column(
+                          children: [
+
+                            SizedBox(height: 30),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text("Version: 2.0.0 (Build: 2.0.0)", style: TextStyle(color: Colors.black, fontSize: 16)),
+                                IconButton(
+                                  icon: Icon(Icons.info_outline),
+                                  onPressed: () => _showTutorialDialog(context),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+
+              ],
             ),
+
             if (isNotificationDrawerOpen) _buildNotificationDrawer(),
           ],
         ),
