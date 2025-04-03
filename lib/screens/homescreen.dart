@@ -1,3 +1,4 @@
+import 'package:aims/screens/server_connection_screen.dart';
 import 'package:aims/screens/stockroom/stockroom.dart';
 import 'package:aims/screens/treatmentarea/treatmentareascreen.dart';
 
@@ -10,6 +11,8 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../api/firebase_api.dart';
 import '../../utils/colors.dart';
+
+import '../../utils/version.dart';
 
 import '../utils/user_storage.dart';
 import 'authentication/loginscreen.dart';
@@ -224,25 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: EdgeInsets.only(bottom: 30),
-                        child: Column(
-                          children: [
 
-                            SizedBox(height: 30),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text("Version: 2.0.0 (Build: 2.0.0)", style: TextStyle(color: Colors.black, fontSize: 16)),
-                                IconButton(
-                                  icon: Icon(Icons.info_outline),
-                                  onPressed: () => _showTutorialDialog(context),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -344,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
             GestureDetector(
               onTap: () {
                 Navigator.pop(context); // Close the dialog
-                Get.to(() => OfflineDataScreen());
+                Get.to(() => ConnectToOfflinePage());
               },
               child: Container(
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
@@ -648,8 +633,5 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-
-
-
 }
 
