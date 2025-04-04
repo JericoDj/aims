@@ -1,6 +1,7 @@
 import 'package:aims/screens/authentication/loginscreen.dart';
 import 'package:aims/screens/authentication_repository.dart';
 import 'package:aims/screens/offline_controller.dart';
+import 'package:aims/utils/colors.dart';
 import 'package:aims/utils/user_storage.dart';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -243,7 +244,7 @@ class MyApp extends StatelessWidget {
       title: 'AIMS Inventory',
       theme: ThemeData(
         fontFamily: 'Bourgeois',
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: MyColors.orange),
         useMaterial3: true,
       ),
       home: const LoginScreen(),
@@ -264,7 +265,11 @@ class WebApp extends StatelessWidget {
         child: GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'AIMS Inventory',
-          theme: ThemeData(primarySwatch: Colors.blue),
+          theme: ThemeData(
+            fontFamily: 'Bourgeois',
+            colorScheme: ColorScheme.fromSeed(seedColor: MyColors.orange),
+            useMaterial3: true,
+          ),
           home: const LoginScreen(),
         ),
       ),

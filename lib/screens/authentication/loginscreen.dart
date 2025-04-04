@@ -38,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    Get.dialog(Center(child: CircularProgressIndicator()), barrierDismissible: false);
 
     try {
       UserCredential? userCredential = await _authRepo.loginWithEmailAndPassword(email, password);

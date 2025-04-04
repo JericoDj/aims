@@ -45,6 +45,10 @@
 			<string>remote-notification</string>
 			<string>processing</string>
 		</array>
+		<key>BGTaskSchedulerPermittedIdentifiers</key>
+        <array>
+          <string>com.leosgroup.aims.backgroundTask</string>
+        </array>
 		<key>UILaunchStoryboardName</key>
 		<string>LaunchScreen</string>
 		<key>UIMainStoryboardFile</key>
