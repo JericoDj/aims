@@ -1,23 +1,27 @@
-
 import 'package:aims/screens/server_connection_screen.dart';
 import 'package:aims/screens/stockroom/stockroom.dart';
 import 'package:aims/screens/treatmentarea/treatmentareascreen.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../api/firebase_api.dart';
 import '../../utils/colors.dart';
 
+
 import '../../utils/version.dart';
+
 import '../controller/notification_controller.dart';
+
 import '../utils/user_storage.dart';
 import 'authentication/loginscreen.dart';
 import 'generateqr/genearateqrscreen.dart';
+
+import 'package:intl/intl.dart'; // For formatting date
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -345,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: EdgeInsets.symmetric(horizontal: 20),
                           child: Column(
                             children: [
-                              Image.asset('assets/images/logo/logo.png', height: 165),
+                              Image.asset('assets/images/logo/AIMS LOGO.jpg', height: 165),
                               SizedBox(height: 10),
                               Text(
                                 "AIMS",
@@ -355,15 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Text(
-                                "NURSE APP",
-                                style: TextStyle(
-                                  color: MyColors.red,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 2,
-                                ),
-                              ),
+
                               SizedBox(height: 20),
                               buildButton("STOCK ROOM", MyColors.white, MyColors.red, () => Get.to(() => StockRoomScreen())),
                               SizedBox(height: 20),
