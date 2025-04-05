@@ -184,7 +184,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             foregroundColor: MaterialStateProperty.all(MyColors.white),
                           ),
                           onPressed: () {
-
                             // Navigate to the Forgot Password screen
                             Get.to(ForgotPasswordScreen());
                           },
@@ -214,14 +213,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
+                // Positioned widget for version text at the bottom
                 Positioned(
-                  bottom: 30,
+                  bottom: 20,  // Ensures it’s positioned at the bottom
                   left: 0,
                   right: 0,
-                  child: Center(
-                    child: Text(
-                      "Version: ${AppVersion.version} (Build: ${AppVersion.build})",
-                      style: TextStyle(color: Colors.white54, fontSize: 16),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20), // Adds some padding for better spacing
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Version: ${AppVersion.version} (Build: ${AppVersion.build})",
+                          style: const TextStyle(color: Colors.white54, fontSize: 16),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -232,6 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
 
   Future<bool> _showExitDialog(BuildContext context) async {
     return await showDialog(

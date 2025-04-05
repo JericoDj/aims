@@ -1,24 +1,23 @@
+
 import 'package:aims/screens/server_connection_screen.dart';
 import 'package:aims/screens/stockroom/stockroom.dart';
 import 'package:aims/screens/treatmentarea/treatmentareascreen.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../api/firebase_api.dart';
 import '../../utils/colors.dart';
 
 import '../../utils/version.dart';
-
+import '../controller/notification_controller.dart';
 import '../utils/user_storage.dart';
 import 'authentication/loginscreen.dart';
 import 'generateqr/genearateqrscreen.dart';
-
-import 'oflline/offlineDataScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -59,8 +58,139 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _initFirebaseNotifications();
     _initializeNotificationCheck();
+    checkLowStockAndNearExpiry();  // Call the function on init
 
   }
+
+
+
+
+// Function to check low stock and near-expiry items
+  Future<void> checkLowStockAndNearExpiry() async {
+    try {
+      final now = DateTime.now();
+      final formattedDate = DateFormat('yyyy-MM-dd').format(now);
+
+      final lowStockDoc = await FirebaseFirestore.instance
+          .collection('indicators')
+          .doc('lowStock')
+          .get();
+
+      final nearExpiryDoc = await FirebaseFirestore.instance
+          .collection('indicators')
+          .doc('nearExpiry')
+          .get();
+
+      DateTime lastLowStockCheck = DateTime(2000);
+      DateTime lastNearExpiryCheck = DateTime(2000);
+
+      final lowStockData = lowStockDoc.data();
+      final nearExpiryData = nearExpiryDoc.data();
+
+      if (lowStockData != null) {
+        final rawDate = lowStockData['dateTime'];
+        if (rawDate is Timestamp) {
+          lastLowStockCheck = rawDate.toDate();
+        } else if (rawDate is String) {
+          lastLowStockCheck = DateTime.tryParse(rawDate) ?? DateTime(2000);
+        }
+      }
+
+      if (nearExpiryData != null) {
+        final rawDate = nearExpiryData['dateTime'];
+        if (rawDate is Timestamp) {
+          lastNearExpiryCheck = rawDate.toDate();
+        } else if (rawDate is String) {
+          lastNearExpiryCheck = DateTime.tryParse(rawDate) ?? DateTime(2000);
+        }
+      }
+
+      print("🧪 Last Low Stock Check: $lastLowStockCheck");
+      print("🧪 Last Near Expiry Check: $lastNearExpiryCheck");
+
+      final shouldRunCheck = now.difference(lastLowStockCheck).inDays >= 1 ||
+          now.difference(lastNearExpiryCheck).inDays >= 1;
+
+      if (shouldRunCheck) {
+        print("🚀 Starting low stock and expiry checks...");
+
+        // === 🔔 Near Expiry Check ===
+        final stockSnapshot = await FirebaseFirestore.instance
+            .collectionGroup('items')
+            .where('expiry_alert_days', isGreaterThan: 0)
+            .get();
+
+        List<Map<String, dynamic>> nearlyExpiringItems = [];
+
+        for (var doc in stockSnapshot.docs) {
+          final itemData = doc.data();
+
+          DateTime expirationDate;
+          final expiryRaw = itemData['expiration_date'];
+          if (expiryRaw is Timestamp) {
+            expirationDate = expiryRaw.toDate();
+          } else if (expiryRaw is String) {
+            expirationDate = DateTime.tryParse(expiryRaw) ?? DateTime(2000);
+          } else {
+            expirationDate = DateTime(2000);
+          }
+
+          final expiryAlertDays = itemData['expiry_alert_days'] ?? 0;
+          final alertDate = expirationDate.subtract(Duration(days: expiryAlertDays));
+
+          if (alertDate.isBefore(now) || alertDate.isAtSameMomentAs(now)) {
+            final itemName = itemData['item_name'] ?? 'Unnamed';
+            final brand = itemData['brand'] ?? '';
+            nearlyExpiringItems.add({
+              'name': itemName,
+              'brand': brand,
+              'expiry': expirationDate.toIso8601String(),
+              'alertFrom': alertDate.toIso8601String(),
+            });
+          }
+        }
+
+        if (nearlyExpiringItems.isNotEmpty) {
+          print("📋 NEARLY EXPIRING ITEMS:");
+          for (var item in nearlyExpiringItems) {
+            print("🔸 ${item['name']} (${item['brand']}) - "
+                "Expires: ${item['expiry']} | Alert From: ${item['alertFrom']}");
+          }
+        } else {
+          print("✅ No items are nearing expiry today.");
+        }
+
+        // === 📉 Low Stock Check ===
+        // Add your low stock check logic here if needed...
+
+        // ✅ Send notification
+        NotificationController notificationController = Get.find();
+        await notificationController.sendNotificationToAllUsers(
+          "Stock Alert: Low Stock & Near Expiry",
+          "Some items are low or near expiry. Check inventory!",
+        );
+
+        // ✅ Update indicators
+        await FirebaseFirestore.instance
+            .collection('indicators')
+            .doc('lowStock')
+            .set({'dateTime': now, 'haveChecked': true});
+
+        await FirebaseFirestore.instance
+            .collection('indicators')
+            .doc('nearExpiry')
+            .set({'dateTime': now, 'haveChecked': true});
+
+        print("✅ Stock check and notification sent.");
+      } else {
+        print("⏳ Already checked today. Skipping.");
+      }
+    } catch (e) {
+      print("❌ Error checking stock or expiry: $e");
+    }
+  }
+
+
 
 
 
@@ -201,6 +331,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 fit: BoxFit.fitWidth,
               ),
             ),
+
+            // Main UI
             Column(
               children: [
                 _buildAppBar(),
@@ -215,8 +347,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Image.asset('assets/images/logo/logo.png', height: 165),
                               SizedBox(height: 10),
-                              Text("AIMS", style: TextStyle(color: Colors.black, fontSize: 48, fontWeight: FontWeight.bold)),
-                              Text("NURSE APP", style: TextStyle(color: MyColors.red, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                              Text(
+                                "AIMS",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "NURSE APP",
+                                style: TextStyle(
+                                  color: MyColors.red,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
+                              ),
                               SizedBox(height: 20),
                               buildButton("STOCK ROOM", MyColors.white, MyColors.red, () => Get.to(() => StockRoomScreen())),
                               SizedBox(height: 20),
@@ -227,20 +374,43 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 30),
+                        child: Column(
+                          children: [
 
+                            SizedBox(height: 30),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Version: ${AppVersion.version} (Build: ${AppVersion.build})",
+                                  style: TextStyle(color: Colors.white, fontSize: 16),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.info_outline, color: Colors.white,),
+                                  onPressed: () => _showTutorialDialog(context),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
-
               ],
             ),
 
+            // 🔔 Notification Drawer (keep it last so it's on top)
             if (isNotificationDrawerOpen) _buildNotificationDrawer(),
           ],
         ),
       ),
     );
   }
+
+
 
 
 
@@ -409,9 +579,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: MyColors.red, fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
-                        "${docData["Action"]?.toString() ?? "Action"}: " // Modified line
-                            "${docData["Quantity"]?.toString() ?? "N/A"} " // Safe access
-                            "(${docData["Category"]?.toString() ?? "Uncategorized"})", // Safe access
+                        "${docData["Action"]?.toString() ?? "Action"}: "
+                            "${docData["Quantity"] != null && docData["Quantity"] != 0 ? docData["Quantity"].toString() : docData["Quantity Added"]?.toString() ?? "N/A"} "
+                            "(${docData["Category"]?.toString() ?? "Uncategorized"})",
                       ),
                       trailing: Text(
                         _formatTimestamp(docData["Date Updated"]),
