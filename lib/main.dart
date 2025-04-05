@@ -149,24 +149,23 @@ void main() async {
 
     // ✅ Initialize notifications
     await _initializeNotifications();
-
-    // ✅ 🆕 Wait for APNs token, then get FCM token
-    await _waitForAPNSTokenAndGetFCMToken();
-
     // ✅ Initialize GetStorage
     await LocalStorage.init();
+
 
     // ✅ Request necessary permissions
     await _requestPermissions();
 
-    if (kIsWeb) {
-      // ✅ If running on web, use WebApp
-      Get.testMode = true;
-      runApp(WebApp());
-    } else {
-      // ✅ If running on mobile, use MyApp
-      runApp(const MyApp());
-    }
+    // ✅ 🆕 Wait for APNs token, then get FCM token
+    await _waitForAPNSTokenAndGetFCMToken();
+
+
+    runApp(const MyApp()); // ✅ Required to launch your app
+
+
+
+
+
   } catch (e) {
     debugPrint("❌ Firebase initialization failed: \$e");
   }
@@ -234,6 +233,7 @@ Future<void> _handlePhotoPermissions() async {
 }
 
 
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -248,31 +248,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const LoginScreen(),
-    );
-  }
-}
-
-class WebApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 600,
-        height: 800,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black, width: 2),
-        ),
-        child: GetMaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'AIMS Inventory',
-          theme: ThemeData(
-            fontFamily: 'Bourgeois',
-            colorScheme: ColorScheme.fromSeed(seedColor: MyColors.orange),
-            useMaterial3: true,
-          ),
-          home: const LoginScreen(),
-        ),
-      ),
     );
   }
 }
