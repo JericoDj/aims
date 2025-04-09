@@ -133,12 +133,16 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
   Map<String, String> _parseScannedData(String data) {
     Map<String, String> parsedData = {};
     List<String> lines = data.split("\n");
+
     for (String line in lines) {
       List<String> parts = line.split(":");
       if (parts.length >= 2) {
-        parsedData[parts[0].trim()] = parts.sublist(1).join(":").trim();
+        String key = parts[0].trim().toLowerCase(); // ✅ Normalize key to lowercase
+        String value = parts.sublist(1).join(":").trim();
+        parsedData[key] = value;
       }
     }
+
     return parsedData;
   }
 
@@ -215,11 +219,23 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
 
     String category = scannedItem['category'] ?? "";
     String itemName = scannedItem['item_name'] ?? "";
+    String brand = scannedItem['brand'] ?? "";
+
+    String _generateDocumentId(String brand, String itemName) {
+      return brand.trim().toLowerCase().replaceAll(RegExp(r'[^\w]'), "_") +
+          "_" +
+          itemName.trim().toLowerCase().replaceAll(RegExp(r'[^\w]'), "_");
+    }
+
+// 🔐 Build full Firestore document ID
+    String documentId = _generateDocumentId(brand, itemName);
     String usedQuantityStr = usedQuantityController.text.trim();
     String dateUpdated = DateTime.now().toIso8601String(); // Capture timestamp
 
     category = category.replaceAll(" ", "_").replaceAll(":", "_");
     itemName = itemName.replaceAll(" ", "_").replaceAll(":", "_");
+
+
 
     if (itemName.isEmpty || category.isEmpty || usedQuantityStr.isEmpty) {
       print("❌ Error: Invalid input.");
@@ -241,7 +257,7 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
           .collection('stock')
           .doc(category)
           .collection('items')
-          .doc(itemName);
+          .doc(documentId);
 
       // ✅ Fetch the current quantity from Firestore first
       DocumentSnapshot snapshot = await itemRef.get();
@@ -273,8 +289,9 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
       // ✅ Save usage history in Firestore with Category
       await FirebaseFirestore.instance.collection("history").add({
         "Item Name": scannedItem['item_name'] ?? "Unknown",
+        "Brand": scannedItem['brand'] ?? "Unknown",  // ✅ Added Brand
         "Quantity": usedQuantityStr,
-        "Category": scannedItem['category'] ?? "Unknown", // ✅ Added Category
+        "Category": scannedItem['category'] ?? "Unknown",
         "Action": "Treatment Use",
         "Date Updated": dateUpdated,
       });

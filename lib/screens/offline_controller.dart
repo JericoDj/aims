@@ -173,12 +173,12 @@ class ConnectToOfflineController extends GetxController {
     final serverIp = serverIpController.text;
     try {
       final response = await http.post(
-        Uri.parse('http://$serverIp:8080/items'), // Changed to /items
+        Uri.parse('http://$serverIp:8080/items'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(newData),
+        body: jsonEncode(newData), // Must include category field
       );
 
-      if (response.statusCode == 201) { // Check for 201 Created
+      if (response.statusCode == 201) {
         serverStatus.value = "✅ Data Added Successfully";
         await fetchData();
       } else {
