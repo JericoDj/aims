@@ -133,22 +133,18 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
   Map<String, String> _parseScannedData(String data) {
     Map<String, String> parsedData = {};
     List<String> lines = data.split("\n");
-
     for (String line in lines) {
       List<String> parts = line.split(":");
       if (parts.length >= 2) {
-        String key = parts[0].trim().toLowerCase(); // ✅ Normalize key to lowercase
-        String value = parts.sublist(1).join(":").trim();
-        parsedData[key] = value;
+        parsedData[parts[0].trim()] = parts.sublist(1).join(":").trim();
       }
     }
-
     return parsedData;
   }
 
   /// ✅ Function to Show Dialog for Used Items
   void showUsedItemsDialog(BuildContext context) {
-    _isDialogOpen = true; // ✅ Prevent re-scanning
+
 
     showDialog(
       context: context,
@@ -222,12 +218,13 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
     String brand = scannedItem['brand'] ?? "";
 
     String _generateDocumentId(String brand, String itemName) {
-      return brand.trim().toLowerCase().replaceAll(RegExp(r'[^\w]'), "_") +
+      // Ensure that the case is preserved and only special characters are replaced
+      return brand.trim().replaceAll(RegExp(r'[^\w]'), "_") +
           "_" +
-          itemName.trim().toLowerCase().replaceAll(RegExp(r'[^\w]'), "_");
+          itemName.trim().replaceAll(RegExp(r'[^\w]'), "_");
     }
 
-// 🔐 Build full Firestore document ID
+    // 🔐 Build full Firestore document ID
     String documentId = _generateDocumentId(brand, itemName);
     String usedQuantityStr = usedQuantityController.text.trim();
     String dateUpdated = DateTime.now().toIso8601String(); // Capture timestamp
@@ -235,10 +232,9 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
     category = category.replaceAll(" ", "_").replaceAll(":", "_");
     itemName = itemName.replaceAll(" ", "_").replaceAll(":", "_");
 
-
-
     if (itemName.isEmpty || category.isEmpty || usedQuantityStr.isEmpty) {
       print("❌ Error: Invalid input.");
+      Get.snackbar("Error", "Please fill all required fields", backgroundColor: Colors.red, colorText: Colors.white);
       return;
     }
 
@@ -279,9 +275,9 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
         return;
       }
 
-      // ✅ Subtract used quantity from stock and save as string
+      // ✅ Subtract used quantity from stock and store as an integer
       await itemRef.update({
-        'quantity': (currentQuantity - usedQuantity).toString(), // Store as string
+        'quantity': (currentQuantity - usedQuantity), // Store as integer
       });
 
       print("✅ Successfully logged used items!");
@@ -309,11 +305,6 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
 
       _isDialogOpen = false; // ✅ Allow next scan
 
-// Show a success message (optional)
-
-
-      // Show a success message
-
     } catch (e) {
       print("❌ Firestore Update Error: $e");
       Get.snackbar(
@@ -324,6 +315,7 @@ class _TreatmentQRScannerScreenState extends State<TreatmentQRScannerScreen> {
       );
     }
   }
+
 
 
   /// ✅ Helper Function to Display Item Details

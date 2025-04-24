@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../utils/colors.dart';
 import 'historychart.dart';
+import 'itemMonthlyUsageScreen.dart';
 
 class TreatmentAreaScreen extends StatelessWidget {
   @override
@@ -91,7 +92,7 @@ class TreatmentAreaScreen extends StatelessWidget {
             Center(
               child: GestureDetector(
                 onTap: () {
-                  Get.to(() => HistoryChartScreen());
+                  Get.to(() => ItemMonthlyUsageScreen());
                 },
                 child: Column(
                   children: [
