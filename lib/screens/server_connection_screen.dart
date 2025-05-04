@@ -227,6 +227,7 @@ class _ConnectToOfflinePageState extends State<ConnectToOfflinePage> {
 
                       if (success) {
                         await _loadOfflineData();
+
                         Navigator.of(context).pop();
                         Get.snackbar("Success", "Quantity updated successfully!",
                             backgroundColor: Colors.green, colorText: Colors.white);
@@ -315,6 +316,7 @@ class _ConnectToOfflinePageState extends State<ConnectToOfflinePage> {
 
   /// ✅ Add New Data Dialog
   void _showAddDataDialog() {
+    final controller = Get.find<ConnectToOfflineController>();
     Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -365,6 +367,7 @@ class _ConnectToOfflinePageState extends State<ConnectToOfflinePage> {
                         onTap: () async{
                           print("running");
                           await _addNewData();
+                          controller.connectToOfflineServer();
 
                         },
                         child: Container(
@@ -438,6 +441,7 @@ class _ConnectToOfflinePageState extends State<ConnectToOfflinePage> {
       print("🌐 Attempting connection to: $serverIp");
       print("Adding to server");
 
+
       final newData = {
         'storageCode': _storageCodeController.text,
         'serialNo': _serialNoController.text,
@@ -448,9 +452,10 @@ class _ConnectToOfflinePageState extends State<ConnectToOfflinePage> {
         'specification': _specificationController.text,
         'quantity': int.tryParse(_quantityController.text) ?? 0,
       };
+      print(newData);
 
       final response = await http.post(
-        Uri.parse('http://$serverIp/items'), // ✅ Fixed: no duplicate :8080
+        Uri.parse('http://$serverIp:8080/items'), // ✅ Fixed: no duplicate :8080
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(newData),
       ).timeout(Duration(seconds: 5));
@@ -519,8 +524,6 @@ class _ConnectToOfflinePageState extends State<ConnectToOfflinePage> {
         });
       }
     } catch (e) {
-      Get.snackbar("Error", "Failed to refresh data: ${e.toString()}",
-          backgroundColor: Colors.red);
     }
   }
 

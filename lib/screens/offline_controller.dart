@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
 import '../utils/user_storage.dart';
+import 'database/offline/offline_database.dart';
 
 class ConnectToOfflineController extends GetxController {
   var serverData = <Map<String, dynamic>>[].obs; // Observable list of server data
@@ -13,6 +14,14 @@ class ConnectToOfflineController extends GetxController {
   var serverStatus = ''.obs;
   var isConnected = false.obs;
 
+
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  List<Map<String, dynamic>> _offlineData = [];
+
+  /// ✅ Load Offline Data from SQLite
+  Future<void> _loadOfflineData() async {
+   await _databaseHelper.getAllData();
+  }
   // TextController to control the TextField input for the server IP address
   TextEditingController serverIpController = TextEditingController();
 
@@ -45,6 +54,7 @@ class ConnectToOfflineController extends GetxController {
 
   // function in aims update but upon entering we need to save it to local storage the ip.. okay?
   Future<bool> updateItemQuantity(int id, int newQuantity) async {
+    final controller = Get.find<ConnectToOfflineController>();
     print("🚀 Starting updateItemQuantity()");
 
     // ✅ Get the saved IP from local storage
@@ -58,7 +68,7 @@ class ConnectToOfflineController extends GetxController {
     }
 
     try {
-      final url = 'http://$serverIp/items/$id';
+      final url = 'http://$serverIp:8080/items/$id';
       final body = jsonEncode({'quantity': newQuantity});
 
       print('🔄 Attempting quantity update...');
@@ -70,6 +80,8 @@ class ConnectToOfflineController extends GetxController {
         headers: {'Content-Type': 'application/json'},
         body: body,
       ).timeout(const Duration(seconds: 5));
+
+      controller.connectToOfflineServer();
 
       print('📥 Received response:');
       print('🎚️ Status Code: ${response.statusCode}');
@@ -95,9 +107,12 @@ class ConnectToOfflineController extends GetxController {
       print('💥 Unexpected error: $e');
       print('🔍 Stack trace: $stackTrace');
       serverStatus.value = "❌ Unexpected error: ${e.toString()}";
+
       return false;
     }
   }
+
+
 
   // Update data method
   Future<void> updateData(Map<String, dynamic> updatedData) async {
@@ -109,6 +124,7 @@ class ConnectToOfflineController extends GetxController {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(updatedData),
       );
+
 
       if (response.statusCode == 200) {
         serverStatus.value = "✅ Data Updated Successfully";
@@ -178,6 +194,7 @@ class ConnectToOfflineController extends GetxController {
         body: jsonEncode(newData), // Must include category field
       );
 
+
       if (response.statusCode == 201) {
         serverStatus.value = "✅ Data Added Successfully";
         await fetchData();
@@ -191,20 +208,24 @@ class ConnectToOfflineController extends GetxController {
 
 // Update deleteData
   Future<void> deleteData(int id) async {
+    final controller = Get.find<ConnectToOfflineController>();
     final serverIp = serverIpController.text;
     try {
       final response = await http.delete(
         Uri.parse('http://$serverIp:8080/items/$id'), // Changed to /items/$id
+
       );
+
+      controller.connectToOfflineServer();
 
       if (response.statusCode == 200) {
         serverStatus.value = "✅ Data Deleted";
-        await fetchData();
+
       } else {
-        serverStatus.value = "❌ Delete Failed: ${response.statusCode}";
+
       }
     } catch (e) {
-      serverStatus.value = "❌ Error: ${e.toString()}";
+
     }
   }
 

@@ -123,40 +123,31 @@ class _OfflineDataScreenState extends State<OfflineDataScreen> {
 
 
   /// ✅ Add New Data to Offline Database
+  bool _isSaving = false; // In your State class
+
   Future<void> _addNewData() async {
-    // Debug: Print form values
-    print("Form Values:");
-    print("Storage Code: ${_storageCodeController.text}");
-    print("Serial No: ${_serialNoController.text}");
-    print("Item Name: ${_itemNameController.text}");
-    print("Brand: ${_brandController.text}");
-    print("Exp Date: ${_expirationDateController.text}");
-    print("Unit: ${_unitMeasurementController.text}");
-    print("Spec: ${_specificationController.text}");
-    print("Qty: ${_quantityController.text}");
-
-    // Validate fields
-    if (_storageCodeController.text.trim().isEmpty ||
-        _serialNoController.text.trim().isEmpty ||
-        _itemNameController.text.trim().isEmpty ||
-        _brandController.text.trim().isEmpty ||
-        _expirationDateController.text.trim().isEmpty ||
-        _unitMeasurementController.text.trim().isEmpty ||
-        _specificationController.text.trim().isEmpty ||
-        _quantityController.text.trim().isEmpty) {
-
-      Get.snackbar("Error", "Please fill all required fields",
-          backgroundColor: Colors.red, colorText: Colors.white);
-      return;
-    }
+    if (_isSaving) return; // Prevent double submission
+    setState(() {
+      _isSaving = true;
+    });
 
     try {
-      // Get server IP
-      final serverIp =  await LocalStorage.getServerIp;
-      print("🌐 Attempting connection to: $serverIp");
-      print("Adding to server");
+      // Validate fields
+      if (_storageCodeController.text.trim().isEmpty ||
+          _serialNoController.text.trim().isEmpty ||
+          _itemNameController.text.trim().isEmpty ||
+          _brandController.text.trim().isEmpty ||
+          _expirationDateController.text.trim().isEmpty ||
+          _unitMeasurementController.text.trim().isEmpty ||
+          _specificationController.text.trim().isEmpty ||
+          _quantityController.text.trim().isEmpty) {
+        Get.snackbar("Error", "Please fill all required fields",
+            backgroundColor: Colors.red, colorText: Colors.white);
+        return;
+      }
 
-      // Create payload (server will add timestamp)
+      final serverIp = await LocalStorage.getServerIp;
+
       final newData = {
         'storageCode': _storageCodeController.text,
         'serialNo': _serialNoController.text,
@@ -168,43 +159,44 @@ class _OfflineDataScreenState extends State<OfflineDataScreen> {
         'quantity': int.tryParse(_quantityController.text) ?? 0,
       };
 
-      // Make HTTP request
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('http://$serverIp:8080/items'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(newData),
-      ).timeout(Duration(seconds: 5));
-
-      print("🔄 Server response: ${response.statusCode}");
-      print("📦 Response body: ${response.body}");
+      )
+          .timeout(Duration(seconds: 5));
 
       if (response.statusCode == 201) {
         Get.snackbar("Success", "Data saved to server!",
             backgroundColor: Colors.green, colorText: Colors.white);
-        await _loadFromServer(); // Refresh from server
+
+        _clearFormFields();
+
+        if (mounted) {
+          Get.back(); // Close bottom sheet/dialog if using Get
+          Navigator.pop(context); // Close screen if necessary
+        }
       } else {
         Get.snackbar("Error", "Server error: ${response.body}",
             backgroundColor: Colors.red, colorText: Colors.white);
-        return;
       }
     } on SocketException catch (e) {
       Get.snackbar("Error", "No network connection: ${e.toString()}",
           backgroundColor: Colors.red, colorText: Colors.white);
-      return;
     } on TimeoutException catch (e) {
       Get.snackbar("Error", "Server timeout: ${e.toString()}",
           backgroundColor: Colors.red, colorText: Colors.white);
-      return;
     } catch (e) {
       Get.snackbar("Error", "Unexpected error: ${e.toString()}",
           backgroundColor: Colors.red, colorText: Colors.white);
-      return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
-
-    // Only clear if successful
-    _clearFormFields();
-    Get.back();
-    Navigator.pop(context);
   }
 
   /// 🌐 Get Current Server IP Address
@@ -225,21 +217,7 @@ class _OfflineDataScreenState extends State<OfflineDataScreen> {
   }
 
   /// 🔄 Load Data from Server
-  Future<void> _loadFromServer() async {
-    try {
-      final serverIp = await _getCurrentServerIp();
-      final response = await http.get(Uri.parse('http://$serverIp:8080/items'));
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _offlineData = List<Map<String, dynamic>>.from(jsonDecode(response.body));
-        });
-      }
-    } catch (e) {
-      Get.snackbar("Error", "Failed to refresh data: ${e.toString()}",
-          backgroundColor: Colors.red);
-    }
-  }
 
 
   /// ✅ Clear All Form Fields
@@ -474,6 +452,8 @@ class _OfflineDataScreenState extends State<OfflineDataScreen> {
 
   /// ✅ Add New Data Dialog
   void _showAddDataDialog() {
+    final controller = Get.find<ConnectToOfflineController>();
+
     Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -501,7 +481,6 @@ class _OfflineDataScreenState extends State<OfflineDataScreen> {
                   ),
                 ],
               ),
-
               Divider(),
 
               Expanded(
@@ -521,10 +500,35 @@ class _OfflineDataScreenState extends State<OfflineDataScreen> {
                       SizedBox(height: 20),
 
                       GestureDetector(
-                        onTap: () async{
-                          print("running");
-                          await _addNewData();
+                        onTap: () async {
+                          // Step 1: Build newData
+                          final newData = {
+                            'storageCode': _storageCodeController.text.trim(),
+                            'serialNo': _serialNoController.text.trim(),
+                            'itemName': _itemNameController.text.trim(),
+                            'brand': _brandController.text.trim(),
+                            'expirationDate': _expirationDateController.text.trim(),
+                            'unitMeasurement': _unitMeasurementController.text.trim(),
+                            'specification': _specificationController.text.trim(),
+                            'quantity': int.tryParse(_quantityController.text.trim()) ?? 0,
+                          };
 
+                          // Step 2: Validate (optional)
+                          if (newData.values.any((v) => v == null || v.toString().isEmpty)) {
+                            Get.snackbar("Error", "Please fill all fields",
+                                backgroundColor: Colors.red, colorText: Colors.white);
+                            return;
+                          }
+
+                          // Step 3: Submit to Controller
+                          await controller.addData(newData);
+                          await _loadOfflineData(); // Refresh list
+
+
+                          // Optional: Close dialog if successful
+                          if (controller.serverStatus.value.contains("✅")) {
+                            Get.back(); // Close dialog
+                          }
                         },
                         child: Container(
                           width: double.infinity,
@@ -534,7 +538,8 @@ class _OfflineDataScreenState extends State<OfflineDataScreen> {
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: Center(
-                            child: Text("Add Data", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: Text("Add Data",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ),
@@ -558,6 +563,7 @@ class _OfflineDataScreenState extends State<OfflineDataScreen> {
       barrierDismissible: false,
     );
   }
+
 
 
 
